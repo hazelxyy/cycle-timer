@@ -49,12 +49,21 @@
       text-transform: uppercase;
       color: var(--muted);
     }
+    .header-right {
+      position: relative;
+      width: 56px;
+      height: 44px;
+      flex-shrink: 0;
+    }
     .btn-settings, .btn-back {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 56px;
+      height: 44px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 44px;
-      height: 44px;
       border: 1px solid var(--line);
       border-radius: 0;
       background: transparent;
@@ -62,14 +71,15 @@
       font-family: var(--font);
       font-size: 12px;
       font-weight: 400;
-      letter-spacing: 0.15em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       text-decoration: none;
       cursor: pointer;
-      transition: border-color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: border-color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn-back { width: auto; padding: 12px 20px; }
+    .btn-back { padding: 0; }
+    .header-right .view-hidden { opacity: 0; pointer-events: none; }
     .btn-settings:hover, .btn-back:hover { border-color: var(--text); }
     .btn-settings:active, .btn-back:active {
       border-color: var(--text);
@@ -226,12 +236,14 @@
 <body id="body" class="phase-work">
   <header class="header">
     <span class="header-title" id="headerTitle">循环计时器</span>
-    <button type="button" class="btn-settings" id="btnSettings" title="设置">
-      <svg viewBox="0 0 24 24" fill="currentColor">
-        <circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/>
-      </svg>
-    </button>
-    <button type="button" class="btn-back view-hidden" id="btnBack">返回</button>
+    <div class="header-right">
+      <button type="button" class="btn-settings" id="btnSettings" title="设置">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/>
+        </svg>
+      </button>
+      <button type="button" class="btn-back view-hidden" id="btnBack">返回</button>
+    </div>
   </header>
 
   <div class="view-container">
@@ -276,6 +288,41 @@
       'use strict';
 
       const STORAGE_KEY = 'cycletimer_settings';
+
+      /** 振动：阶段结束短振，全部完成长振 */
+      function vibrate(isAllDone) {
+        if (typeof navigator.vibrate !== 'function') return;
+        if (isAllDone) {
+          navigator.vibrate([300, 150, 300]);
+        } else {
+          navigator.vibrate([200, 80, 200]);
+        }
+      }
+
+      /** 声音：Web Audio 短提示音（需在用户操作后首次调用解锁） */
+      var audioCtx = null;
+      function playBeep(isAllDone) {
+        try {
+          if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          var osc = audioCtx.createOscillator();
+          var gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.frequency.value = isAllDone ? 880 : 660;
+          osc.type = 'sine';
+          gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (isAllDone ? 0.35 : 0.2));
+          osc.start(audioCtx.currentTime);
+          osc.stop(audioCtx.currentTime + (isAllDone ? 0.35 : 0.2));
+        } catch (e) { /* 忽略 */ }
+      }
+
+      /** 阶段结束时的提示（振动 + 声音） */
+      function triggerPhaseEndFeedback(isAllDone) {
+        vibrate(isAllDone);
+        playBeep(isAllDone);
+      }
 
       function loadSettings() {
         try {
@@ -426,16 +473,19 @@
         render();
         if (state.remaining <= 0) {
           if (state.phase === 'work') {
+            triggerPhaseEndFeedback(false);
             state.phase = 'rest';
             state.remaining = state.restSec;
             state.totalPhase = state.restSec;
           } else {
             state.cycleIndex++;
             if (state.cycleIndex >= state.totalCycles) {
+              triggerPhaseEndFeedback(true);
               stop();
               cycleInfo.textContent = '全部完成 · 共 ' + state.totalCycles + ' 轮';
               return;
             }
+            triggerPhaseEndFeedback(false);
             state.phase = 'work';
             state.remaining = state.workSec;
             state.totalPhase = state.workSec;
@@ -446,6 +496,12 @@
 
       function start() {
         applyStoredSettings();
+        if (!audioCtx) {
+          try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+          } catch (e) { /* 忽略 */ }
+        }
         state.cycleIndex = 0;
         state.phase = 'work';
         state.remaining = state.workSec;
