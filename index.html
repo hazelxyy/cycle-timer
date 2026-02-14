@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>循环计时器</title>
+  <style>
+    :root {
+      --work-accent: #2dd4a0;
+      --rest-accent: #7c7ce0;
+      --panel: rgba(255,255,255,0.12);
+      --text: #f0f0f0;
+      --muted: rgba(255,255,255,0.6);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "SF Pro Display", -apple-system, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(160deg, #0f2027 0%, #1a3a47 50%, #0f2027 100%);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      padding-top: 16px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .header {
+      width: 100%;
+      max-width: 340px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .header-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+    }
+    .btn-settings {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(255,255,255,0.12);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 1.25rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-settings:hover, .btn-settings:active {
+      background: rgba(255,255,255,0.2);
+    }
+    .card {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 28px;
+      width: 100%;
+      max-width: 340px;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+      margin-top: auto;
+      margin-bottom: auto;
+    }
+    .phase-label {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 6px;
+      opacity: 0.9;
+    }
+    .timer-display {
+      font-variant-numeric: tabular-nums;
+      font-size: 3.5rem;
+      font-weight: 700;
+      line-height: 1.1;
+      margin: 12px 0 20px;
+    }
+    .progress-wrap {
+      height: 6px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .progress-bar {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .cycle-info {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      background: var(--work-accent);
+      color: #0d2a22;
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.15);
+      color: var(--text);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    body.phase-work .card { --accent: var(--work-accent); }
+    body.phase-rest .card { --accent: var(--rest-accent); }
+    .progress-bar { background: var(--accent, var(--work-accent)); }
+    .phase-work .phase-label { color: var(--work-accent); }
+    .phase-rest .phase-label { color: var(--rest-accent); }
+  </style>
+</head>
+<body id="body" class="phase-work">
+  <header class="header">
+    <span class="header-title">循环计时器</span>
+    <a href="settings.html" class="btn-settings" title="设置">⚙</a>
+  </header>
+  <div class="card">
+    <div class="phase-label" id="phaseLabel">准备</div>
+    <div class="timer-display" id="timerDisplay">--:--</div>
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progressBar" style="width: 100%"></div>
+    </div>
+    <div class="cycle-info" id="cycleInfo">去设置中配置时间与循环次数</div>
+    <div class="controls">
+      <button type="button" class="btn btn-primary" id="btnStart">开始</button>
+      <button type="button" class="btn btn-secondary" id="btnStop" disabled>暂停</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const STORAGE_KEY = 'cycletimer_settings';
+
+      /**
+       * 从 localStorage 读取设置，无则返回默认值
+       * @returns {{ workSec: number, restSec: number, cycles: number }}
+       */
+      function loadSettings() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const o = JSON.parse(raw);
+            return {
+              workSec: Math.max(1, Math.min(999, Number(o.workSec) || 30)),
+              restSec: Math.max(0, Math.min(999, Number(o.restSec) ?? 20)),
+              cycles: Math.max(1, Math.min(99, Number(o.cycles) || 5))
+            };
+          }
+        } catch (e) { /* ignore */ }
+        return { workSec: 30, restSec: 20, cycles: 5 };
+      }
+
+      const body = document.getElementById('body');
+      const phaseLabel = document.getElementById('phaseLabel');
+      const timerDisplay = document.getElementById('timerDisplay');
+      const progressBar = document.getElementById('progressBar');
+      const cycleInfo = document.getElementById('cycleInfo');
+      const btnStart = document.getElementById('btnStart');
+      const btnStop = document.getElementById('btnStop');
+
+      const settings = loadSettings();
+      let state = {
+        running: false,
+        cycleIndex: 0,
+        totalCycles: settings.cycles,
+        workSec: settings.workSec,
+        restSec: settings.restSec,
+        phase: 'work',
+        remaining: 0,
+        totalPhase: settings.workSec,
+        tickId: null
+      };
+
+      /**
+       * 每次显示主页面时从 localStorage 刷新设置（从设置页返回会用到）
+       */
+      function applyStoredSettings() {
+        const s = loadSettings();
+        state.workSec = s.workSec;
+        state.restSec = s.restSec;
+        state.totalCycles = s.cycles;
+        if (!state.running) {
+          state.totalPhase = state.workSec;
+          render();
+        }
+      }
+
+      /**
+       * 格式化秒数为 MM:SS
+       * @param {number} sec - 秒数
+       * @returns {string}
+       */
+      function formatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return m + ':' + (s < 10 ? '0' : '') + s;
+      }
+
+      /**
+       * 更新界面显示
+       */
+      function render() {
+        if (!state.running && state.remaining === 0 && state.cycleIndex === 0) {
+          timerDisplay.textContent = '--:--';
+        } else {
+          timerDisplay.textContent = formatTime(state.remaining);
+        }
+        const pct = (!state.running && state.remaining === 0 && state.cycleIndex === 0)
+          ? 100
+          : (state.totalPhase > 0 ? (state.remaining / state.totalPhase) * 100 : 0);
+        progressBar.style.width = pct + '%';
+        if (state.phase === 'work') {
+          body.className = 'phase-work';
+          phaseLabel.textContent = '进行中';
+        } else {
+          body.className = 'phase-rest';
+          phaseLabel.textContent = '间隔休息';
+        }
+        if (state.running || state.remaining > 0) {
+          cycleInfo.textContent = '第 ' + (state.cycleIndex + 1) + ' / ' + state.totalCycles + ' 轮';
+        } else {
+          cycleInfo.textContent = '去设置中配置时间与循环次数';
+        }
+      }
+
+      /**
+       * 单次滴答：减少剩余时间并可能切换阶段/循环
+       */
+      function tick() {
+        if (!state.running) return;
+        state.remaining--;
+        render();
+        if (state.remaining <= 0) {
+          if (state.phase === 'work') {
+            state.phase = 'rest';
+            state.remaining = state.restSec;
+            state.totalPhase = state.restSec;
+          } else {
+            state.cycleIndex++;
+            if (state.cycleIndex >= state.totalCycles) {
+              stop();
+              cycleInfo.textContent = '全部完成！共 ' + state.totalCycles + ' 轮';
+              return;
+            }
+            state.phase = 'work';
+            state.remaining = state.workSec;
+            state.totalPhase = state.workSec;
+          }
+        }
+        state.tickId = setTimeout(tick, 1000);
+      }
+
+      function start() {
+        applyStoredSettings();
+        state.cycleIndex = 0;
+        state.phase = 'work';
+        state.remaining = state.workSec;
+        state.totalPhase = state.workSec;
+        state.running = true;
+        btnStart.disabled = true;
+        btnStop.disabled = false;
+        render();
+        state.tickId = setTimeout(tick, 1000);
+      }
+
+      function stop() {
+        state.running = false;
+        if (state.tickId) clearTimeout(state.tickId);
+        state.tickId = null;
+        btnStart.disabled = false;
+        btnStop.disabled = true;
+        if (state.remaining <= 0 && state.cycleIndex >= state.totalCycles) {
+          timerDisplay.textContent = '0:00';
+          progressBar.style.width = '0%';
+        }
+        render();
+      }
+
+      btnStart.addEventListener('click', start);
+      btnStop.addEventListener('click', stop);
+      /** 从设置页返回时刷新显示（如通过 visibilitychange 或 pageshow） */
+      window.addEventListener('pageshow', applyStoredSettings);
+      render();
+    })();
+  </script>
+</body>
+</html>
