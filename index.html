@@ -66,16 +66,44 @@
       text-transform: uppercase;
       text-decoration: none;
       cursor: pointer;
-      transition: border-color 0.15s;
+      transition: border-color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       -webkit-tap-highlight-color: transparent;
     }
     .btn-back { width: auto; padding: 12px 20px; }
-    .btn-settings:hover, .btn-settings:active,
-    .btn-back:hover, .btn-back:active { border-color: var(--text); }
+    .btn-settings:hover, .btn-back:hover { border-color: var(--text); }
+    .btn-settings:active, .btn-back:active {
+      border-color: var(--text);
+      transform: scale(0.94);
+    }
     .btn-settings svg { width: 16px; height: 16px; }
-    .view { width: 100%; max-width: 320px; display: flex; flex-direction: column; align-items: stretch; }
-    .view-hidden { display: none !important; }
-    .view-timer { margin: auto 0; }
+    .view-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      max-width: 320px;
+      min-height: 320px;
+    }
+    .view {
+      width: 100%;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .view-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+    }
     .card { padding: 0; }
     .phase-label {
       font-size: 11px;
@@ -84,6 +112,7 @@
       text-transform: uppercase;
       color: var(--muted);
       margin-bottom: 16px;
+      transition: color 0.3s ease, opacity 0.3s ease;
     }
     .timer-display {
       font-variant-numeric: tabular-nums;
@@ -93,6 +122,7 @@
       letter-spacing: -0.02em;
       margin-bottom: 32px;
       color: var(--text);
+      transition: opacity 0.25s ease;
     }
     .progress-wrap {
       height: 1px;
@@ -103,13 +133,14 @@
     .progress-bar {
       height: 100%;
       background: var(--text);
-      transition: width 0.25s ease;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .cycle-info {
       font-size: 15px;
       font-weight: 300;
       color: var(--muted);
       margin-bottom: 40px;
+      transition: opacity 0.25s ease;
     }
     .controls { display: flex; gap: 12px; }
     .btn {
@@ -125,9 +156,12 @@
       letter-spacing: 0.15em;
       text-transform: uppercase;
       cursor: pointer;
-      transition: background 0.15s, color 0.15s;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .btn:active { opacity: 0.8; }
+    .btn:active {
+      transform: scale(0.96);
+    }
+    .btn:disabled:active { transform: scale(1); }
     .btn-primary { background: var(--text); color: var(--bg); border-color: var(--text); }
     .btn-secondary { background: transparent; color: var(--text); }
     .btn:disabled {
@@ -184,9 +218,9 @@
       letter-spacing: 0.15em;
       text-transform: uppercase;
       cursor: pointer;
-      transition: opacity 0.15s;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .btn-save:active { opacity: 0.8; }
+    .btn-save:active { transform: scale(0.96); }
   </style>
 </head>
 <body id="body" class="phase-work">
@@ -200,6 +234,7 @@
     <button type="button" class="btn-back view-hidden" id="btnBack">返回</button>
   </header>
 
+  <div class="view-container">
   <main class="view view-timer" id="viewTimer">
     <div class="card">
       <div class="phase-label" id="phaseLabel">准备</div>
@@ -234,6 +269,7 @@
       <button type="submit" class="btn-save">保存并返回</button>
     </form>
   </main>
+  </div>
 
   <script>
     (function () {
