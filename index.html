@@ -4,101 +4,104 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>循环计时器</title>
+  <link rel="apple-touch-icon" href="icon.svg" />
   <style>
     :root {
-      --work-accent: #2dd4a0;
-      --rest-accent: #7c7ce0;
-      --panel: rgba(255,255,255,0.12);
-      --text: #f0f0f0;
-      --muted: rgba(255,255,255,0.6);
+      --bg: #fff;
+      --text: #0a0a0a;
+      --muted: #888;
+      --line: #e5e5e5;
+      --font: "Helvetica Neue", "SF Pro Text", -apple-system, sans-serif;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: "SF Pro Display", -apple-system, "Segoe UI", sans-serif;
+      font-family: var(--font);
+      font-weight: 300;
       min-height: 100vh;
-      background: linear-gradient(160deg, #0f2027 0%, #1a3a47 50%, #0f2027 100%);
+      background: var(--bg);
       color: var(--text);
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 24px;
-      padding-top: 16px;
+      padding: 48px 24px;
       -webkit-tap-highlight-color: transparent;
     }
     .header {
       width: 100%;
-      max-width: 340px;
+      max-width: 320px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 12px;
+      margin-bottom: 48px;
     }
     .header-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
       color: var(--muted);
     }
     .btn-settings {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      border: none;
-      background: rgba(255,255,255,0.12);
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: transparent;
       color: var(--text);
       text-decoration: none;
-      font-size: 1.25rem;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: border-color 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
     .btn-settings:hover, .btn-settings:active {
-      background: rgba(255,255,255,0.2);
+      border-color: var(--text);
+    }
+    .btn-settings svg {
+      width: 16px;
+      height: 16px;
     }
     .card {
-      background: var(--panel);
-      border-radius: 20px;
-      padding: 28px;
       width: 100%;
-      max-width: 340px;
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.08);
-      margin-top: auto;
-      margin-bottom: auto;
+      max-width: 320px;
+      padding: 0;
+      margin: auto 0;
     }
     .phase-label {
-      font-size: 0.85rem;
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.25em;
       text-transform: uppercase;
-      letter-spacing: 0.12em;
-      margin-bottom: 6px;
-      opacity: 0.9;
+      color: var(--muted);
+      margin-bottom: 16px;
     }
     .timer-display {
       font-variant-numeric: tabular-nums;
-      font-size: 3.5rem;
-      font-weight: 700;
-      line-height: 1.1;
-      margin: 12px 0 20px;
+      font-size: 72px;
+      font-weight: 200;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      margin-bottom: 32px;
+      color: var(--text);
     }
     .progress-wrap {
-      height: 6px;
-      background: rgba(0,0,0,0.25);
-      border-radius: 3px;
+      height: 1px;
+      background: var(--line);
       overflow: hidden;
-      margin-bottom: 24px;
+      margin-bottom: 32px;
     }
     .progress-bar {
       height: 100%;
-      border-radius: 3px;
-      transition: width 0.3s ease;
+      background: var(--text);
+      transition: width 0.25s ease;
     }
     .cycle-info {
-      font-size: 0.9rem;
+      font-size: 13px;
+      font-weight: 300;
       color: var(--muted);
-      margin-bottom: 20px;
+      margin-bottom: 40px;
     }
     .controls {
       display: flex;
@@ -106,39 +109,51 @@
     }
     .btn {
       flex: 1;
-      padding: 14px 24px;
-      border: none;
-      border-radius: 12px;
-      font-size: 1rem;
-      font-weight: 600;
+      padding: 16px 24px;
+      border: 1px solid var(--text);
+      border-radius: 0;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
       cursor: pointer;
-      transition: transform 0.1s, opacity 0.2s;
+      transition: background 0.15s, color 0.15s;
     }
-    .btn:active { transform: scale(0.98); }
+    .btn:active { opacity: 0.8; }
     .btn-primary {
-      background: var(--work-accent);
-      color: #0d2a22;
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
     }
     .btn-secondary {
-      background: rgba(255,255,255,0.15);
+      background: transparent;
       color: var(--text);
     }
     .btn:disabled {
-      opacity: 0.5;
+      border-color: var(--line);
+      color: var(--muted);
       cursor: not-allowed;
-      transform: none;
+      opacity: 1;
     }
-    body.phase-work .card { --accent: var(--work-accent); }
-    body.phase-rest .card { --accent: var(--rest-accent); }
-    .progress-bar { background: var(--accent, var(--work-accent)); }
-    .phase-work .phase-label { color: var(--work-accent); }
-    .phase-rest .phase-label { color: var(--rest-accent); }
+    .btn-primary:disabled {
+      background: var(--line);
+      color: var(--muted);
+    }
   </style>
 </head>
 <body id="body" class="phase-work">
   <header class="header">
     <span class="header-title">循环计时器</span>
-    <a href="settings.html" class="btn-settings" title="设置">⚙</a>
+    <a href="settings.html" class="btn-settings" title="设置">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="6" r="1.5"/>
+        <circle cx="12" cy="12" r="1.5"/>
+        <circle cx="12" cy="18" r="1.5"/>
+      </svg>
+    </a>
   </header>
   <div class="card">
     <div class="phase-label" id="phaseLabel">准备</div>
@@ -146,7 +161,7 @@
     <div class="progress-wrap">
       <div class="progress-bar" id="progressBar" style="width: 100%"></div>
     </div>
-    <div class="cycle-info" id="cycleInfo">去设置中配置时间与循环次数</div>
+    <div class="cycle-info" id="cycleInfo">在设置中配置时间与循环</div>
     <div class="controls">
       <button type="button" class="btn btn-primary" id="btnStart">开始</button>
       <button type="button" class="btn btn-secondary" id="btnStop" disabled>暂停</button>
@@ -199,9 +214,6 @@
         tickId: null
       };
 
-      /**
-       * 每次显示主页面时从 localStorage 刷新设置（从设置页返回会用到）
-       */
       function applyStoredSettings() {
         const s = loadSettings();
         state.workSec = s.workSec;
@@ -213,20 +225,12 @@
         }
       }
 
-      /**
-       * 格式化秒数为 MM:SS
-       * @param {number} sec - 秒数
-       * @returns {string}
-       */
       function formatTime(sec) {
         const m = Math.floor(sec / 60);
         const s = sec % 60;
         return m + ':' + (s < 10 ? '0' : '') + s;
       }
 
-      /**
-       * 更新界面显示
-       */
       function render() {
         if (!state.running && state.remaining === 0 && state.cycleIndex === 0) {
           timerDisplay.textContent = '--:--';
@@ -247,13 +251,10 @@
         if (state.running || state.remaining > 0) {
           cycleInfo.textContent = '第 ' + (state.cycleIndex + 1) + ' / ' + state.totalCycles + ' 轮';
         } else {
-          cycleInfo.textContent = '去设置中配置时间与循环次数';
+          cycleInfo.textContent = '在设置中配置时间与循环';
         }
       }
 
-      /**
-       * 单次滴答：减少剩余时间并可能切换阶段/循环
-       */
       function tick() {
         if (!state.running) return;
         state.remaining--;
@@ -267,7 +268,7 @@
             state.cycleIndex++;
             if (state.cycleIndex >= state.totalCycles) {
               stop();
-              cycleInfo.textContent = '全部完成！共 ' + state.totalCycles + ' 轮';
+              cycleInfo.textContent = '全部完成 · 共 ' + state.totalCycles + ' 轮';
               return;
             }
             state.phase = 'work';
@@ -306,7 +307,6 @@
 
       btnStart.addEventListener('click', start);
       btnStop.addEventListener('click', stop);
-      /** 从设置页返回时刷新显示（如通过 visibilitychange 或 pageshow） */
       window.addEventListener('pageshow', applyStoredSettings);
       render();
     })();

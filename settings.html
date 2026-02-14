@@ -4,112 +4,126 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>设置 - 循环计时器</title>
+  <link rel="apple-touch-icon" href="icon.svg" />
   <style>
     :root {
-      --work-accent: #2dd4a0;
-      --panel: rgba(255,255,255,0.12);
-      --text: #f0f0f0;
-      --muted: rgba(255,255,255,0.6);
+      --bg: #fff;
+      --text: #0a0a0a;
+      --muted: #888;
+      --line: #e5e5e5;
+      --font: "Helvetica Neue", "SF Pro Text", -apple-system, sans-serif;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: "SF Pro Display", -apple-system, "Segoe UI", sans-serif;
+      font-family: var(--font);
+      font-weight: 300;
       min-height: 100vh;
-      background: linear-gradient(160deg, #0f2027 0%, #1a3a47 50%, #0f2027 100%);
+      background: var(--bg);
       color: var(--text);
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 24px;
+      padding: 48px 24px;
       -webkit-tap-highlight-color: transparent;
     }
     .header {
       width: 100%;
-      max-width: 340px;
+      max-width: 320px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 24px;
+      margin-bottom: 48px;
     }
     .header-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
       color: var(--muted);
     }
     .btn-back {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 10px 16px;
-      border-radius: 12px;
-      border: none;
-      background: rgba(255,255,255,0.12);
+      padding: 12px 20px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: transparent;
       color: var(--text);
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
       text-decoration: none;
-      font-size: 0.95rem;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: border-color 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
     .btn-back:hover, .btn-back:active {
-      background: rgba(255,255,255,0.2);
+      border-color: var(--text);
     }
     .card {
-      background: var(--panel);
-      border-radius: 20px;
-      padding: 28px;
       width: 100%;
-      max-width: 340px;
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.08);
+      max-width: 320px;
+      padding: 0;
     }
     .form-row {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 16px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
     }
     .form-row:last-of-type {
-      margin-bottom: 24px;
+      border-bottom: none;
     }
     label {
-      font-size: 0.9rem;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.1em;
       color: var(--muted);
-      min-width: 80px;
+      min-width: 72px;
     }
     input[type="number"] {
       flex: 1;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(0,0,0,0.2);
+      padding: 12px 0;
+      border: none;
+      border-bottom: 1px solid var(--line);
+      background: transparent;
       color: var(--text);
-      font-size: 1rem;
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 300;
+      transition: border-color 0.15s;
     }
     input[type="number"]:focus {
       outline: none;
-      border-color: var(--work-accent);
+      border-bottom-color: var(--text);
     }
     .unit {
-      font-size: 0.9rem;
+      font-size: 12px;
       color: var(--muted);
       flex-shrink: 0;
     }
     .btn-save {
       width: 100%;
-      padding: 14px 24px;
-      border: none;
-      border-radius: 12px;
-      font-size: 1rem;
-      font-weight: 600;
+      margin-top: 48px;
+      padding: 16px 24px;
+      border: 1px solid var(--text);
+      border-radius: 0;
+      background: var(--text);
+      color: var(--bg);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
       cursor: pointer;
-      background: var(--work-accent);
-      color: #0d2a22;
-      transition: transform 0.1s, opacity 0.2s;
+      transition: opacity 0.15s;
     }
     .btn-save:active {
-      transform: scale(0.98);
+      opacity: 0.8;
     }
   </style>
 </head>
@@ -144,9 +158,6 @@
 
       const STORAGE_KEY = 'cycletimer_settings';
 
-      /**
-       * 从 localStorage 读取设置并填充表单
-       */
       function loadIntoForm() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
@@ -166,10 +177,6 @@
         document.getElementById('cycles').value = 5;
       }
 
-      /**
-       * 校验并返回当前表单的数值
-       * @returns {{ workSec: number, restSec: number, cycles: number } | null}
-       */
       function getFormValues() {
         const work = parseInt(document.getElementById('workSec').value, 10);
         const rest = parseInt(document.getElementById('restSec').value, 10);
