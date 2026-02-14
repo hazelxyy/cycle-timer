@@ -195,22 +195,20 @@
     }
     .btn-primary:disabled { background: var(--line); color: var(--muted); }
     .btn-reset {
-      width: 100%;
-      margin-top: 16px;
-      padding: 12px 24px;
+      padding: 16px 24px;
       border: 1px solid var(--line);
       border-radius: 0;
       background: transparent;
       color: var(--muted);
       font-family: var(--font);
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 400;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       cursor: pointer;
       transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .btn-reset:active { transform: scale(0.98); }
+    .btn-reset:active { transform: scale(0.96); }
     .btn-reset:hover { border-color: var(--text); color: var(--text); }
     /* 设置面板 */
     .form-row {
@@ -289,9 +287,9 @@
       </div>
       <div class="cycle-info" id="cycleInfo">在设置中配置时间与循环</div>
       <div class="controls">
+        <button type="button" class="btn btn-reset" id="btnReset">复位</button>
         <button type="button" class="btn btn-primary" id="btnStartPause">开始</button>
       </div>
-      <button type="button" class="btn-reset" id="btnReset">复位</button>
     </div>
   </main>
 
@@ -521,6 +519,11 @@
         } else {
           cycleInfo.textContent = '在设置中配置时间与循环';
         }
+        if (!state.running) {
+          btnStartPause.textContent = state.remaining > 0 ? '继续' : '开始';
+          btnStartPause.classList.remove('btn-as-reset');
+          btnStartPause.classList.add('btn-primary');
+        }
       }
 
       function tick() {
@@ -550,14 +553,9 @@
         state.tickId = setTimeout(tick, 1000);
       }
 
-      function start() {
+      /** 从头开始新一轮 */
+      function startFresh() {
         applyStoredSettings();
-        if (!audioCtx) {
-          try {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-          } catch (e) { /* 忽略 */ }
-        }
         state.cycleIndex = 0;
         state.phase = 'work';
         state.remaining = state.workSec;
@@ -570,11 +568,31 @@
         state.tickId = setTimeout(tick, 1000);
       }
 
+      /** 开始或继续：若已暂停则从当前剩余时间继续，否则从头开始 */
+      function start() {
+        if (!audioCtx) {
+          try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+          } catch (e) { /* 忽略 */ }
+        }
+        if (state.remaining > 0) {
+          state.running = true;
+          btnStartPause.textContent = '暂停';
+          btnStartPause.classList.add('btn-as-reset');
+          btnStartPause.classList.remove('btn-primary');
+          render();
+          state.tickId = setTimeout(tick, 1000);
+        } else {
+          startFresh();
+        }
+      }
+
       function stop() {
         state.running = false;
         if (state.tickId) clearTimeout(state.tickId);
         state.tickId = null;
-        btnStartPause.textContent = '开始';
+        btnStartPause.textContent = state.remaining > 0 ? '继续' : '开始';
         btnStartPause.classList.remove('btn-as-reset');
         btnStartPause.classList.add('btn-primary');
         if (state.remaining <= 0 && state.cycleIndex >= state.totalCycles) {
