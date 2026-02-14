@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <title>循环计时器</title>
-  <!-- PNG 优先：iOS 添加到主屏幕会优先用 180×180 的 icon.png -->
   <link rel="apple-touch-icon" sizes="180x180" href="icon.png" />
   <link rel="apple-touch-icon" href="icon.svg" />
   <style>
@@ -43,7 +45,7 @@
       text-transform: uppercase;
       color: var(--muted);
     }
-    .btn-settings {
+    .btn-settings, .btn-back {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -53,24 +55,24 @@
       border-radius: 0;
       background: transparent;
       color: var(--text);
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
       text-decoration: none;
       cursor: pointer;
       transition: border-color 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn-settings:hover, .btn-settings:active {
-      border-color: var(--text);
-    }
-    .btn-settings svg {
-      width: 16px;
-      height: 16px;
-    }
-    .card {
-      width: 100%;
-      max-width: 320px;
-      padding: 0;
-      margin: auto 0;
-    }
+    .btn-back { width: auto; padding: 12px 20px; }
+    .btn-settings:hover, .btn-settings:active,
+    .btn-back:hover, .btn-back:active { border-color: var(--text); }
+    .btn-settings svg { width: 16px; height: 16px; }
+    .view { width: 100%; max-width: 320px; display: flex; flex-direction: column; align-items: stretch; }
+    .view-hidden { display: none !important; }
+    .view-timer { margin: auto 0; }
+    .card { padding: 0; }
     .phase-label {
       font-size: 10px;
       font-weight: 400;
@@ -105,10 +107,7 @@
       color: var(--muted);
       margin-bottom: 40px;
     }
-    .controls {
-      display: flex;
-      gap: 12px;
-    }
+    .controls { display: flex; gap: 12px; }
     .btn {
       flex: 1;
       padding: 16px 24px;
@@ -125,50 +124,112 @@
       transition: background 0.15s, color 0.15s;
     }
     .btn:active { opacity: 0.8; }
-    .btn-primary {
-      background: var(--text);
-      color: var(--bg);
-      border-color: var(--text);
-    }
-    .btn-secondary {
-      background: transparent;
-      color: var(--text);
-    }
+    .btn-primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .btn-secondary { background: transparent; color: var(--text); }
     .btn:disabled {
       border-color: var(--line);
       color: var(--muted);
       cursor: not-allowed;
       opacity: 1;
     }
-    .btn-primary:disabled {
-      background: var(--line);
-      color: var(--muted);
+    .btn-primary:disabled { background: var(--line); color: var(--muted); }
+    /* 设置面板 */
+    .form-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
     }
+    .form-row:last-of-type { border-bottom: none; }
+    .form-row label {
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      min-width: 72px;
+    }
+    .form-row input[type="number"] {
+      flex: 1;
+      padding: 12px 0;
+      border: none;
+      border-bottom: 1px solid var(--line);
+      background: transparent;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 300;
+      transition: border-color 0.15s;
+    }
+    .form-row input[type="number"]:focus {
+      outline: none;
+      border-bottom-color: var(--text);
+    }
+    .form-row .unit { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+    .btn-save {
+      width: 100%;
+      margin-top: 48px;
+      padding: 16px 24px;
+      border: 1px solid var(--text);
+      border-radius: 0;
+      background: var(--text);
+      color: var(--bg);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-save:active { opacity: 0.8; }
   </style>
 </head>
 <body id="body" class="phase-work">
   <header class="header">
-    <span class="header-title">循环计时器</span>
-    <a href="settings.html" class="btn-settings" title="设置">
+    <span class="header-title" id="headerTitle">循环计时器</span>
+    <button type="button" class="btn-settings" id="btnSettings" title="设置">
       <svg viewBox="0 0 24 24" fill="currentColor">
-        <circle cx="12" cy="6" r="1.5"/>
-        <circle cx="12" cy="12" r="1.5"/>
-        <circle cx="12" cy="18" r="1.5"/>
+        <circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/>
       </svg>
-    </a>
+    </button>
+    <button type="button" class="btn-back view-hidden" id="btnBack">返回</button>
   </header>
-  <div class="card">
-    <div class="phase-label" id="phaseLabel">准备</div>
-    <div class="timer-display" id="timerDisplay">--:--</div>
-    <div class="progress-wrap">
-      <div class="progress-bar" id="progressBar" style="width: 100%"></div>
+
+  <main class="view view-timer" id="viewTimer">
+    <div class="card">
+      <div class="phase-label" id="phaseLabel">准备</div>
+      <div class="timer-display" id="timerDisplay">--:--</div>
+      <div class="progress-wrap">
+        <div class="progress-bar" id="progressBar" style="width: 100%"></div>
+      </div>
+      <div class="cycle-info" id="cycleInfo">在设置中配置时间与循环</div>
+      <div class="controls">
+        <button type="button" class="btn btn-primary" id="btnStart">开始</button>
+        <button type="button" class="btn btn-secondary" id="btnStop" disabled>暂停</button>
+      </div>
     </div>
-    <div class="cycle-info" id="cycleInfo">在设置中配置时间与循环</div>
-    <div class="controls">
-      <button type="button" class="btn btn-primary" id="btnStart">开始</button>
-      <button type="button" class="btn btn-secondary" id="btnStop" disabled>暂停</button>
-    </div>
-  </div>
+  </main>
+
+  <main class="view view-hidden" id="viewSettings">
+    <form id="form">
+      <div class="form-row">
+        <label for="workSec">每轮时间</label>
+        <input type="number" id="workSec" min="1" max="999" value="30" />
+        <span class="unit">秒</span>
+      </div>
+      <div class="form-row">
+        <label for="restSec">间隔时间</label>
+        <input type="number" id="restSec" min="0" max="999" value="20" />
+        <span class="unit">秒</span>
+      </div>
+      <div class="form-row">
+        <label for="cycles">循环次数</label>
+        <input type="number" id="cycles" min="1" max="99" value="5" />
+      </div>
+      <button type="submit" class="btn-save">保存并返回</button>
+    </form>
+  </main>
 
   <script>
     (function () {
@@ -176,10 +237,6 @@
 
       const STORAGE_KEY = 'cycletimer_settings';
 
-      /**
-       * 从 localStorage 读取设置，无则返回默认值
-       * @returns {{ workSec: number, restSec: number, cycles: number }}
-       */
       function loadSettings() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
@@ -202,6 +259,12 @@
       const cycleInfo = document.getElementById('cycleInfo');
       const btnStart = document.getElementById('btnStart');
       const btnStop = document.getElementById('btnStop');
+      const viewTimer = document.getElementById('viewTimer');
+      const viewSettings = document.getElementById('viewSettings');
+      const btnSettings = document.getElementById('btnSettings');
+      const btnBack = document.getElementById('btnBack');
+      const headerTitle = document.getElementById('headerTitle');
+      const form = document.getElementById('form');
 
       const settings = loadSettings();
       let state = {
@@ -216,8 +279,68 @@
         tickId: null
       };
 
+      function showTimer() {
+        viewTimer.classList.remove('view-hidden');
+        viewSettings.classList.add('view-hidden');
+        btnSettings.classList.remove('view-hidden');
+        btnBack.classList.add('view-hidden');
+        headerTitle.textContent = '循环计时器';
+      }
+
+      function showSettings() {
+        viewTimer.classList.add('view-hidden');
+        viewSettings.classList.remove('view-hidden');
+        btnSettings.classList.add('view-hidden');
+        btnBack.classList.remove('view-hidden');
+        headerTitle.textContent = '设置';
+        loadIntoForm();
+      }
+
+      function loadIntoForm() {
+        var s = loadSettings();
+        document.getElementById('workSec').value = s.workSec;
+        document.getElementById('restSec').value = s.restSec;
+        document.getElementById('cycles').value = s.cycles;
+      }
+
+      function getFormValues() {
+        var work = parseInt(document.getElementById('workSec').value, 10);
+        var rest = parseInt(document.getElementById('restSec').value, 10);
+        var cycles = parseInt(document.getElementById('cycles').value, 10);
+        if (isNaN(work) || work < 1 || work > 999) return null;
+        if (isNaN(rest) || rest < 0 || rest > 999) return null;
+        if (isNaN(cycles) || cycles < 1 || cycles > 99) return null;
+        return { workSec: work, restSec: rest, cycles: cycles };
+      }
+
+      btnSettings.addEventListener('click', showSettings);
+      btnBack.addEventListener('click', showTimer);
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var values = getFormValues();
+        if (!values) {
+          alert('请填写有效数值：每轮时间 1–999 秒，间隔 0–999 秒，循环 1–99 次。');
+          return;
+        }
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
+        } catch (err) {
+          alert('保存失败，请重试。');
+          return;
+        }
+        state.workSec = values.workSec;
+        state.restSec = values.restSec;
+        state.totalCycles = values.cycles;
+        if (!state.running) {
+          state.totalPhase = state.workSec;
+          render();
+        }
+        showTimer();
+      });
+
       function applyStoredSettings() {
-        const s = loadSettings();
+        var s = loadSettings();
         state.workSec = s.workSec;
         state.restSec = s.restSec;
         state.totalCycles = s.cycles;
@@ -228,8 +351,8 @@
       }
 
       function formatTime(sec) {
-        const m = Math.floor(sec / 60);
-        const s = sec % 60;
+        var m = Math.floor(sec / 60);
+        var s = sec % 60;
         return m + ':' + (s < 10 ? '0' : '') + s;
       }
 
@@ -239,7 +362,7 @@
         } else {
           timerDisplay.textContent = formatTime(state.remaining);
         }
-        const pct = (!state.running && state.remaining === 0 && state.cycleIndex === 0)
+        var pct = (!state.running && state.remaining === 0 && state.cycleIndex === 0)
           ? 100
           : (state.totalPhase > 0 ? (state.remaining / state.totalPhase) * 100 : 0);
         progressBar.style.width = pct + '%';
