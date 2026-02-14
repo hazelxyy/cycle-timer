@@ -330,13 +330,12 @@
         }
       }
 
-      /** 声音：单次短音 @param {number} freq 频率 @param {number} duration 秒 @param {number} startTime 从当前起延迟秒数 */
+      /** 声音：单次短音（需在 resume 完成后调用） */
       var audioCtx = null;
       function playTone(freq, duration, startTime) {
         startTime = startTime || 0;
         try {
-          if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          if (audioCtx.state === 'suspended') audioCtx.resume();
+          if (!audioCtx) return;
           var t = audioCtx.currentTime + startTime;
           var osc = audioCtx.createOscillator();
           var gain = audioCtx.createGain();
@@ -368,12 +367,24 @@
         playTone(880, 0.35, 0);
       }
 
-      /** 阶段结束时的提示（振动 + 声音） phase: 'work' | 'rest' | 'all' */
+      /** 阶段结束时的提示（振动 + 声音）。先确保 AudioContext 已 resume 再播，避免 iOS 等无声音。 */
       function triggerPhaseEndFeedback(phase) {
         vibrate(phase === 'all');
-        if (phase === 'work') playWorkEndSound();
-        else if (phase === 'rest') playRestEndSound();
-        else if (phase === 'all') playAllDoneSound();
+        function play() {
+          if (phase === 'work') playWorkEndSound();
+          else if (phase === 'rest') playRestEndSound();
+          else if (phase === 'all') playAllDoneSound();
+        }
+        try {
+          if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume().then(play).catch(function () { play(); });
+          } else {
+            play();
+          }
+        } catch (e) {
+          play();
+        }
       }
 
       function loadSettings() {
